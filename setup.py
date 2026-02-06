@@ -37,6 +37,7 @@ setup(
             'spider_spin = dummy_spider.spider_spin_node:main',
             'spider_controller = dummy_spider.spider_controller_node:main',
             'virtual_joy = dummy_spider.virtual_joy_node:main',
+            'maze_solver = dummy_spider.maze_solver_node:main',
         ],
     },
 )
