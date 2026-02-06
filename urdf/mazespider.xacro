@@ -6,7 +6,13 @@
   <material name="grey"><color rgba="0.4 0.4 0.4 1"/></material>
   <material name="orange"><color rgba="1 0.5 0 1"/></material>
 
-  <link name="base_footprint"/>
+  <!-- Base footprint with minimal inertial properties -->
+  <link name="base_footprint">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
 
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
@@ -48,6 +54,7 @@
     <origin xyz="0 0 -0.0405" rpy="0 0 0"/> 
   </joint>
 
+  <!-- Leg Macro -->
   <xacro:macro name="spider_leg" params="prefix x_dist y_dist yaw_angle">
     <link name="${prefix}_hip">
       <visual>
@@ -114,11 +121,13 @@
     </gazebo>
   </xacro:macro>
 
+  <!-- Instantiate 4 legs -->
   <xacro:spider_leg prefix="FL" x_dist="0.0475"  y_dist="0.0475"  yaw_angle="0.785"/>
   <xacro:spider_leg prefix="FR" x_dist="0.0475"  y_dist="-0.0475" yaw_angle="-0.785"/>
   <xacro:spider_leg prefix="RL" x_dist="-0.0475" y_dist="0.0475"  yaw_angle="2.355"/>
   <xacro:spider_leg prefix="RR" x_dist="-0.0475" y_dist="-0.0475" yaw_angle="-2.355"/>
   
+  <!-- Camera -->
   <link name="camera_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -153,6 +162,7 @@
     </sensor>
   </gazebo>
   
+  <!-- LiDAR -->
   <link name="lidar_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 3.1415"/>
@@ -179,13 +189,12 @@
       <sensor name='gpu_lidar' type='gpu_lidar'>
           <pose>0 0 0 0 0 0</pose>
           <topic>scan</topic>
-          <frame_name>lidar_link</frame_name>
+          <update_rate>10</update_rate> 
           <gz_frame_id>lidar_link</gz_frame_id>
-          <update_rate>2</update_rate>
           <lidar>
               <scan>
               <horizontal>
-                  <samples>720</samples>
+                  <samples>360</samples> 
                   <resolution>1</resolution>
                   <min_angle>-3.14159</min_angle>
                   <max_angle>3.14159</max_angle>
@@ -198,14 +207,14 @@
               </vertical>
               </scan>
               <range>
-                  <min>0.01</min>
-                  <max>12.0</max>
-                  <resolution>0.005</resolution>
+                  <min>0.05</min> 
+                  <max>10.0</max> 
+                  <resolution>0.01</resolution> 
               </range>
               <noise>
                   <type>gaussian</type>
                   <mean>0.0</mean>
-                  <stddev>0.001</stddev>
+                  <stddev>0.01</stddev> 
               </noise>
           </lidar>
           <always_on>true</always_on>
@@ -219,6 +228,7 @@
     </plugin>
   </gazebo>
 
+  <!-- IMU -->
   <link name="imu_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -240,35 +250,67 @@
   <gazebo reference="imu_link">
     <sensor name="imu" type="imu">
       <always_on>1</always_on>
-      <update_rate>50</update_rate>
+      <update_rate>100</update_rate> 
       <visualize>true</visualize>
-      <topic>imu/data</topic>
+      <topic>imu/data</topic> 
       <enable_metrics>true</enable_metrics>
-      <ignition_frame_id>imu_link</ignition_frame_id>
     </sensor>
   </gazebo>
-  <gazebo>  
-    <plugin filename="libignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu"/>  
-  </gazebo>
 
+  <!-- ROS2 Control Configuration -->
   <ros2_control name="gz_ros2_control" type="system">
-    <hardware><plugin>gz_ros2_control/GazeboSimSystem</plugin></hardware>
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    
+    <!-- Joint Definitions -->
     <xacro:macro name="joint_interface" params="name init_val">
       <joint name="${name}">
         <command_interface name="position"/>
-        <state_interface name="position"><param name="initial_value">${init_val}</param></state_interface>
+        <state_interface name="position">
+          <param name="initial_value">${init_val}</param>
+        </state_interface>
         <state_interface name="velocity"/>
+        <state_interface name="effort"/>
       </joint>
     </xacro:macro>
-    <xacro:joint_interface name="FL_hip_yaw" init_val="0.0"/><xacro:joint_interface name="FL_hip_pitch" init_val="-0.9"/><xacro:joint_interface name="FL_knee" init_val="1.6"/>
-    <xacro:joint_interface name="FR_hip_yaw" init_val="0.0"/><xacro:joint_interface name="FR_hip_pitch" init_val="-0.9"/><xacro:joint_interface name="FR_knee" init_val="1.6"/>
-    <xacro:joint_interface name="RL_hip_yaw" init_val="0.0"/><xacro:joint_interface name="RL_hip_pitch" init_val="-0.9"/><xacro:joint_interface name="RL_knee" init_val="1.6"/>
-    <xacro:joint_interface name="RR_hip_yaw" init_val="0.0"/><xacro:joint_interface name="RR_hip_pitch" init_val="-0.9"/><xacro:joint_interface name="RR_knee" init_val="1.6"/>
+    
+    <!-- All 12 joints -->
+    <xacro:joint_interface name="FL_hip_yaw" init_val="0.0"/>
+    <xacro:joint_interface name="FL_hip_pitch" init_val="-0.9"/>
+    <xacro:joint_interface name="FL_knee" init_val="1.6"/>
+    
+    <xacro:joint_interface name="FR_hip_yaw" init_val="0.0"/>
+    <xacro:joint_interface name="FR_hip_pitch" init_val="-0.9"/>
+    <xacro:joint_interface name="FR_knee" init_val="1.6"/>
+    
+    <xacro:joint_interface name="RL_hip_yaw" init_val="0.0"/>
+    <xacro:joint_interface name="RL_hip_pitch" init_val="-0.9"/>
+    <xacro:joint_interface name="RL_knee" init_val="1.6"/>
+    
+    <xacro:joint_interface name="RR_hip_yaw" init_val="0.0"/>
+    <xacro:joint_interface name="RR_hip_pitch" init_val="-0.9"/>
+    <xacro:joint_interface name="RR_knee" init_val="1.6"/>
   </ros2_control>
 
+  <!-- Gazebo ROS Control Plugin -->
   <gazebo>
-    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+    <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
       <parameters>$(find dummy_spider)/config/ros2_controllers.yaml</parameters>
+      <controller_manager_node_name>controller_manager</controller_manager_node_name>
     </plugin>
   </gazebo>
+
+  <!-- Odometry Gazebo Plugin -->
+  <gazebo>
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+      <frame_id>odom</frame_id>
+      <odom_topic>odom</odom_topic>
+      <tf_topic>tf</tf_topic>
+      <robot_base_frame>base_link</robot_base_frame>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+
 </robot>
