@@ -16,7 +16,7 @@ slam_toolbox:
     scan_topic: /scan
     use_map_saver: true
     mode: mapping #localization
-    use_imu: false
+    use_imu: true
     imu_topic: "/imu/data"
 
     debug_logging: false
