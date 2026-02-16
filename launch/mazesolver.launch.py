@@ -101,7 +101,38 @@ def generate_launch_description():
         }.items()
     )
 
-    # 8. Your custom nodes
+    nav2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([
+                FindPackageShare('nav2_bringup'),
+                'launch',
+                'navigation_launch.py'
+            ])
+        ),
+        launch_arguments={
+            'use_sim_time': 'true',
+            # 'slam': 'False',
+            # 'map_subscribe_transient_local': 'true',
+            'params_file': PathJoinSubstitution([
+                    FindPackageShare('dummy_spider'),
+                    'config',
+                    'nav2_params.yaml'
+        ]),
+        }.items()
+    )
+
+
+    rviz_node = Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            output='screen',
+            parameters=[{'use_sim_time': use_sim_time}],
+            arguments=['-d', os.path.join(
+                        get_package_share_directory('dummy_spider'), 'config', 'dummy_spider.rviz')]
+        )
+
+    # 8.Custom nodes
     spider_body_node = Node(
         package='dummy_spider',
         executable='spider_controller',
@@ -115,6 +146,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
     )
+
 
     return LaunchDescription([
         use_sim_time_arg,
@@ -138,6 +170,8 @@ def generate_launch_description():
         TimerAction(period=8.0, actions=[
             slam_toolbox,
             spider_body_node,
-            spider_brain_node
+            # spider_brain_node,
+            nav2,
+            rviz_node,
         ]),
     ])
